@@ -13,17 +13,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-
 public class MainPage extends AppCompatActivity {
 
     public final String FILE_NAME = "numbers.txt";
-    ArrayAdapter<Integer> arrayAdapter;
+    private ArrayAdapter<Integer> arrayAdapter;
     private ProgressBar pBar = null;
+    private ListView loadView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_page);
+
+        // get the listView from the xml screen
+        loadView = (ListView)findViewById(R.id.listView);
 
         pBar = (ProgressBar)findViewById(R.id.progressBar);
         pBar.setVisibility(View.VISIBLE);
@@ -72,20 +76,21 @@ public class MainPage extends AppCompatActivity {
             pBar.setProgress(progress[0]);
         }
 
-        protected void onPostExecute() {
-            System.out.println("I'm Done!");
-        }
     }
 
-    class LoadThread extends AsyncTask<View, Integer, Void> {
+    class LoadThread extends AsyncTask<View, Integer, ArrayAdapter<Integer>> {
 
-        protected Void doInBackground(View...view) {
+        protected ArrayAdapter<Integer> doInBackground(View...view) {
 
             // create a FileWriter to write from the file
             try (Scanner scanner = new Scanner(new File(getFilesDir(), FILE_NAME))) {
 
+                ArrayList<Integer> intList;
                 // create a ArrayList to hold the contents of the file
-                ArrayList<Integer> intList = new ArrayList<>();
+                intList = new ArrayList<>();
+
+                // for the progress bar
+                int i = 0;
 
                 // read in the file with a scanner
                 while (scanner.hasNextInt()){
@@ -93,20 +98,17 @@ public class MainPage extends AppCompatActivity {
                     // add each one to the list
                     intList.add(scanner.nextInt());
 
+                    // increment the progress
+                    i++;
+                    publishProgress(i);
+
                     // go to sleep for 250 milliseconds or .25 seconds
                     Thread.sleep(250);
                 }
 
                 // attach the arrayList to the arrayAdapter, choose the layout from a list that
                 //   android has
-                arrayAdapter =
-                        new ArrayAdapter<Integer>(MainPage.this, android.R.layout.simple_spinner_item, intList);
-
-                // get the listView from the xml screen
-                ListView loadView = (ListView)findViewById(R.id.listView);
-
-                // set the arrayAdapter to the ListView
-               // loadView.setAdapter(arrayAdapter);
+                arrayAdapter = new ArrayAdapter<>(MainPage.this, android.R.layout.simple_spinner_item, intList);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -114,20 +116,24 @@ public class MainPage extends AppCompatActivity {
                 System.out.println("you will never get here unless you broke it bad");
             }
 
-            return null;
+            return arrayAdapter;
         }
 
         protected void onProgressUpdate(Integer... progress) {
             pBar.setProgress(progress[0]);
         }
 
-        protected void onPostExecute() {
+        protected void onPostExecute(ArrayAdapter<Integer> nothing) {
+            // set the arrayAdapter to the ListView
+            loadView.setAdapter(nothing);
         }
 
     }
 
     public void clickClear(View view) {
-        arrayAdapter.clear();
+        if (arrayAdapter != null) {
+            arrayAdapter.clear();
+        }
     }
 
 }
